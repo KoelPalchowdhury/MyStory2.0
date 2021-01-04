@@ -1,61 +1,90 @@
 import React from 'react';
-import {Text,View,TouchableOpacity,StyleSheet, CameraRoll} from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Permissions from 'expo-permissions';
-import {BarCodeScanner} from 'expo-barcode-scanner';
+import { BarCodeScanner } from 'expo-barcode-scanner';
 
-export default class TransactionScreen extends React.Component{
+export default class TransactionScreen extends React.Component {
     constructor(){
-        super();
-        this.state = {
-            CameraPermissions:null,
-            Scan: false,
-            ScanData:'',
-            ButtonState: 'notClicked'
-        }
+      super();
+      this.state = {
+        hasCameraPermissions: null,
+        scanned: false,
+        scannedData: '',
+        buttonState: 'notclicked'
+      }
     }
-    /*We are using this function to take the permission for the camera. The Status === granted when user has granted the permission  
-    and false when user has not granted the permission */
+
     getCameraPermissions = async () =>{
-        const {Status} = await Permissions.askAsync(Permissions.CAMERA);
-        this.setState({CameraPermissions: Status === 'granted', ButtonState: 'Clicked'})
-    }
-    getBarCodeScanned = async ({type,data}) =>{
+      const {status} = await Permissions.askAsync(Permissions.CAMERA);
+      
       this.setState({
-          Scan: true,
-          ScanData: data,
-          ButtonState: 'notClicked'
-      })  
+        /*status === "granted" is true when user has granted permission
+          status === "granted" is false when user has not granted the permission
+        */
+        hasCameraPermissions: status === "granted",
+        buttonState: 'clicked',
+        scanned: false
+      });
     }
-    render (){
-        const CameraPermission = this.state.CameraPermissions;
-        const Scan = this.state.Scan;
-        const ButtonState = this.state.ButtonState;
-        if(ButtonState === 'Clicked' && CameraPermission){
-                    
-          
 
-        return (
-            <View style = {{flex:1, justifyContent: 'center', alignItems:'center'}}>
-            <Text> CameraPermission === true ? this.state.ScanData : 'Need CameraPermission to Scan QR CODE'</Text> 
-            <TouchableOpacity style = {MyStyles.ScanButton} onPress = {this.getCameraPermissions}>
-            <Text style = {MyStyles.ScanText}> Scan QR CODE</Text>
-            }
-             </TouchableOpacity>   
-            </View> 
-        )
+    handleBarCodeScanned = async({type, data})=>{
+      this.setState({
+        scanned: true,
+        scannedData: data,
+        buttonState: 'notclicked'
+      });
     }
-}
-const MyStyles = StyleSheet.create({
-    ScanButton : {
-        backgroundColor: 'lime',
-        justifyContent: 'center',
-        marginTop: 10,
 
+    render() {
+      const hasCameraPermissions = this.state.hasCameraPermissions;
+      const scanned = this.state.scanned;
+      const buttonState = this.state.buttonState;
+
+      if (buttonState === "clicked" && hasCameraPermissions){
+        return(
+          <BarCodeScanner
+            onBarCodeScanned={scanned ? undefined : this.handleBarCodeScanned}
+            style={StyleSheet.absoluteFillObject}
+          />
+        );
+      }
+
+      else if (buttonState === "notcliked"){
+        return(
+          <View style={styles.container}>
+
+          <Text style={styles.displayText}>{
+            hasCameraPermissions===true ? this.state.scannedData: "Need Camera permission to scan barcode "
+          }</Text>     
+
+          <TouchableOpacity
+            onPress={this.getCameraPermissions}
+            style={styles.scanButton}>
+            <Text style={styles.buttonText}>Scan QR Code</Text>
+          </TouchableOpacity>
+        </View>
+        );
+      }
+    }
+  }
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center'
     },
-    ScanText: {
-        fontSize: 20,
-        fontFamily: 'Calibri',
-        color:'tint'
+    displayText:{
+      fontSize: 15,
+      textDecorationLine: 'underline'
+    },
+    scanButton:{
+      backgroundColor: '#2196F3',
+      padding: 10,
+      margin: 10
+    },
+    buttonText:{
+      fontSize: 20,
     }
-})
+  });
 
